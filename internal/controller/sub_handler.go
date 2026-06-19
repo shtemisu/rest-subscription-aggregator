@@ -20,7 +20,16 @@ func NewSubsHandler(ss domain.SubscriptionAggregatorService, log *slog.Logger) *
 	return &SubsHandler{SubsService: ss, log: log}
 }
 
-// Create
+// Create godoc
+// @Summary      Создать подписку
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        input  body      SubInfoRequest  true  "Данные подписки"
+// @Success      201    {object}  map[string]string
+// @Failure      400    {object}  response.ErrorResponse
+// @Failure      500    {object}  response.ErrorResponse
+// @Router       /subscriptions [post]
 func (h *SubsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	var subReq SubInfoRequest
 	if err := json.NewDecoder(r.Body).Decode(&subReq); err != nil {
@@ -42,7 +51,16 @@ func (h *SubsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusCreated, map[string]string{"id": id.String()})
 }
 
-// Read one
+// GetById godoc
+// @Summary      Получить подписку по ID
+// @Tags         subscriptions
+// @Produce      json
+// @Param        id   path      string  true  "ID подписки (UUID)"
+// @Success      200  {object}  SubInfoResponse
+// @Failure      400  {object}  response.ErrorResponse
+// @Failure      404  {object}  response.ErrorResponse
+// @Failure      500  {object}  response.ErrorResponse
+// @Router       /subscriptions/{id} [get]
 func (h *SubsHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
@@ -63,7 +81,18 @@ func (h *SubsHandler) GetById(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, NewSubInfoResponse(*sub))
 }
 
-// Update
+// Update godoc
+// @Summary      Обновить подписку
+// @Tags         subscriptions
+// @Accept       json
+// @Produce      json
+// @Param        id     path      string          true  "ID подписки (UUID)"
+// @Param        input  body      SubInfoRequest  true  "Новые данные подписки"
+// @Success      200    {object}  SubInfoResponse
+// @Failure      400    {object}  response.ErrorResponse
+// @Failure      404    {object}  response.ErrorResponse
+// @Failure      500    {object}  response.ErrorResponse
+// @Router       /subscriptions/{id} [put]
 func (h *SubsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
@@ -98,7 +127,16 @@ func (h *SubsHandler) Update(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, NewSubInfoResponse(sub))
 }
 
-// Delete
+// Delete godoc
+// @Summary      Удалить подписку
+// @Tags         subscriptions
+// @Produce      json
+// @Param        id   path      string  true  "ID подписки (UUID)"
+// @Success      200  {object}  map[string]string
+// @Failure      400  {object}  response.ErrorResponse
+// @Failure      404  {object}  response.ErrorResponse
+// @Failure      500  {object}  response.ErrorResponse
+// @Router       /subscriptions/{id} [delete]
 func (h *SubsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	id, err := uuid.Parse(r.PathValue("id"))
 	if err != nil {
@@ -118,7 +156,20 @@ func (h *SubsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, map[string]string{"id": id.String(), "status": "deleted"})
 }
 
-// List
+// List godoc
+// @Summary      Список подписок
+// @Tags         subscriptions
+// @Produce      json
+// @Param        user_id       query     string  false  "Фильтр по пользователю (UUID)"
+// @Param        service_name  query     string  false  "Фильтр по названию сервиса"
+// @Param        from          query     string  false  "Начало периода (MM-YYYY)"
+// @Param        to            query     string  false  "Конец периода (MM-YYYY)"
+// @Param        limit         query     int     false  "Размер страницы (по умолчанию 50, максимум 100)"
+// @Param        offset        query     int     false  "Смещение"
+// @Success      200  {array}   SubInfoResponse
+// @Failure      400  {object}  response.ErrorResponse
+// @Failure      500  {object}  response.ErrorResponse
+// @Router       /subscriptions [get]
 func (h *SubsHandler) List(w http.ResponseWriter, r *http.Request) {
 	filter, err := parseFilter(r.URL.Query())
 	if err != nil {
@@ -140,7 +191,18 @@ func (h *SubsHandler) List(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, resp)
 }
 
-// Sum
+// SumUsingFilter godoc
+// @Summary      Суммарная стоимость подписок за период
+// @Tags         subscriptions
+// @Produce      json
+// @Param        user_id       query     string  false  "Фильтр по пользователю (UUID)"
+// @Param        service_name  query     string  false  "Фильтр по названию сервиса"
+// @Param        from          query     string  false  "Начало периода (MM-YYYY)"
+// @Param        to            query     string  false  "Конец периода (MM-YYYY)"
+// @Success      200  {object}  map[string]int
+// @Failure      400  {object}  response.ErrorResponse
+// @Failure      500  {object}  response.ErrorResponse
+// @Router       /subscriptions/summary [get]
 func (h *SubsHandler) SumUsingFilter(w http.ResponseWriter, r *http.Request) {
 	filter, err := parseFilter(r.URL.Query())
 	if err != nil {
