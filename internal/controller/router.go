@@ -11,6 +11,6 @@ func NewRouter(h *SubsHandler) *http.ServeMux {
 	mux.HandleFunc("PUT /subscriptions/{id}", h.Update)
 	mux.HandleFunc("DELETE /subscriptions/{id}", h.Delete)
 
-	mux.HandleFunc("GET /subcriptions/summary", h.SumUsingFilter)
+	mux.HandleFunc("GET /subscriptions/summary", h.SumUsingFilter)
 	return mux
 }
