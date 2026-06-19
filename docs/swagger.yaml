@@ -1,0 +1,259 @@
+basePath: /
+definitions:
+  internal_controller.SubInfoRequest:
+    properties:
+      end_date:
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  internal_controller.SubInfoResponse:
+    properties:
+      end_date:
+        type: string
+      id:
+        type: string
+      price:
+        type: integer
+      service_name:
+        type: string
+      start_date:
+        type: string
+      user_id:
+        type: string
+    type: object
+  subAggregator_pkg_response.ErrorResponse:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: REST-сервис агрегации онлайн-подписок
+  title: Subscription Aggregator API
+  version: "1.0"
+paths:
+  /subscriptions:
+    get:
+      parameters:
+      - description: Фильтр по пользователю (UUID)
+        in: query
+        name: user_id
+        type: string
+      - description: Фильтр по названию сервиса
+        in: query
+        name: service_name
+        type: string
+      - description: Начало периода (MM-YYYY)
+        in: query
+        name: from
+        type: string
+      - description: Конец периода (MM-YYYY)
+        in: query
+        name: to
+        type: string
+      - description: Размер страницы (по умолчанию 50, максимум 100)
+        in: query
+        name: limit
+        type: integer
+      - description: Смещение
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/internal_controller.SubInfoResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+      summary: Список подписок
+      tags:
+      - subscriptions
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Данные подписки
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.SubInfoRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+      summary: Создать подписку
+      tags:
+      - subscriptions
+  /subscriptions/{id}:
+    delete:
+      parameters:
+      - description: ID подписки (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+      summary: Удалить подписку
+      tags:
+      - subscriptions
+    get:
+      parameters:
+      - description: ID подписки (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.SubInfoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+      summary: Получить подписку по ID
+      tags:
+      - subscriptions
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - description: ID подписки (UUID)
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Новые данные подписки
+        in: body
+        name: input
+        required: true
+        schema:
+          $ref: '#/definitions/internal_controller.SubInfoRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/internal_controller.SubInfoResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+      summary: Обновить подписку
+      tags:
+      - subscriptions
+  /subscriptions/summary:
+    get:
+      parameters:
+      - description: Фильтр по пользователю (UUID)
+        in: query
+        name: user_id
+        type: string
+      - description: Фильтр по названию сервиса
+        in: query
+        name: service_name
+        type: string
+      - description: Начало периода (MM-YYYY)
+        in: query
+        name: from
+        type: string
+      - description: Конец периода (MM-YYYY)
+        in: query
+        name: to
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties:
+              type: integer
+            type: object
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/subAggregator_pkg_response.ErrorResponse'
+      summary: Суммарная стоимость подписок за период
+      tags:
+      - subscriptions
+swagger: "2.0"
