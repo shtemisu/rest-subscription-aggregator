@@ -2,8 +2,9 @@ package di
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"net/http"
 	"subAggregator/config"
@@ -11,6 +12,7 @@ import (
 	"subAggregator/internal/domain"
 	"subAggregator/internal/repository"
 	"subAggregator/internal/usecase"
+	"subAggregator/pkg/logger"
 	"subAggregator/pkg/migrator"
 	"time"
 
@@ -31,10 +33,9 @@ func Module() fx.Option {
 
 			fx.Annotate(
 				usecase.NewSubAggregatorService,
-				fx.As(new(domain.SubcriptionAggregatorService)),
+				fx.As(new(domain.SubscriptionAggregatorService)),
 			),
-
-			// HTTP-слой.
+			logger.New,
 			controller.NewSubsHandler,
 			NewHTTPServer,
 		),
@@ -44,11 +45,12 @@ func Module() fx.Option {
 	return module
 }
 
-func NewHTTPServer(lc fx.Lifecycle, handler *controller.SubsHandler) *http.Server {
+func NewHTTPServer(lc fx.Lifecycle, handler *controller.SubsHandler, l *slog.Logger, shutdowner fx.Shutdowner) *http.Server {
 	router := controller.NewRouter(handler)
+	h := controller.LoggingMiddleware(l)(router)
 	srv := &http.Server{
 		Addr:    ":8080",
-		Handler: router,
+		Handler: h,
 	}
 
 	lc.Append(fx.Hook{
@@ -57,23 +59,26 @@ func NewHTTPServer(lc fx.Lifecycle, handler *controller.SubsHandler) *http.Serve
 			if err != nil {
 				return err
 			}
-			log.Println("starting HTTP server on", srv.Addr)
-			go srv.Serve(ln)
+			l.Info("starting HTTP server", "address", srv.Addr)
+			go func() {
+				if err := srv.Serve(ln); err != nil && !errors.Is(err, http.ErrServerClosed) {
+					l.Error("http server stopped unexpectedly", "error", err)
+					_ = shutdowner.Shutdown()
+				}
+			}()
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			log.Println("stopping HTTP server on", srv.Addr)
+			l.Info("stopping HTTP server", "address", srv.Addr)
 			return srv.Shutdown(ctx)
 		},
 	})
 	return srv
 }
 
-func NewPostgresPool(lc fx.Lifecycle, cfg *config.Config) (*pgxpool.Pool, error) {
+func NewPostgresPool(lc fx.Lifecycle, cfg *config.Config, l *slog.Logger) (*pgxpool.Pool, error) {
 
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", cfg.DatabaseUser, cfg.DatabasePassword, cfg.DatabaseHost, cfg.DatabasePort, cfg.DatabaseName)
-
-	log.Printf("Connecting to database: %s", dsn)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -84,7 +89,7 @@ func NewPostgresPool(lc fx.Lifecycle, cfg *config.Config) (*pgxpool.Pool, error)
 	}
 
 	if err := pool.Ping(ctx); err != nil {
-		log.Printf("Database ping failed: %v", err)
+		l.Error("Database ping failed", "error", err)
 		return nil, err
 	}
 	lc.Append(fx.Hook{
@@ -96,20 +101,17 @@ func NewPostgresPool(lc fx.Lifecycle, cfg *config.Config) (*pgxpool.Pool, error)
 	return pool, nil
 }
 
-func InitDatabase(pool *pgxpool.Pool, cfg *config.Config) error {
-	log.Println("checking database connection...")
-
+func InitDatabase(pool *pgxpool.Pool, cfg *config.Config, l *slog.Logger) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
 	if err := pool.Ping(ctx); err != nil {
 		return fmt.Errorf("database ping failed: %w", err)
 	}
-	log.Println("database connection established")
+	l.Info("database connection established")
 	if err := migrator.RunMigrations(cfg); err != nil {
-		log.Printf("failed to run migrations: %s", err)
 		return fmt.Errorf("failed to run migrations: %w", err)
 	}
-	log.Println("database migrations completed successfully")
+	l.Info("database migrations completed successfully")
 	return nil
 }

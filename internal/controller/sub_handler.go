@@ -3,7 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"subAggregator/internal/domain"
 	"subAggregator/pkg/response"
@@ -12,13 +12,12 @@ import (
 )
 
 type SubsHandler struct {
-	SubsService domain.SubcriptionAggregatorService
+	SubsService domain.SubscriptionAggregatorService
+	log         *slog.Logger
 }
 
-func NewSubsHandler(ss domain.SubcriptionAggregatorService) *SubsHandler {
-	return &SubsHandler{
-		SubsService: ss,
-	}
+func NewSubsHandler(ss domain.SubscriptionAggregatorService, log *slog.Logger) *SubsHandler {
+	return &SubsHandler{SubsService: ss, log: log}
 }
 
 // Create
@@ -35,10 +34,12 @@ func (h *SubsHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 	id, err := h.SubsService.Create(r.Context(), sub)
 	if err != nil {
+		h.log.Error("failed to create subscription", "error", err, "user_id", sub.UserID)
 		response.WriteError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
-	response.WriteJSON(w, http.StatusCreated, fmt.Sprintf("new sub with id:%s was created", id.String()))
+	h.log.Info("sub was created", "id", id.String())
+	response.WriteJSON(w, http.StatusCreated, map[string]string{"id": id.String()})
 }
 
 // Read one
@@ -55,11 +56,11 @@ func (h *SubsHandler) GetById(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		h.log.Error("failed to get subscription", "error", err)
 		response.WriteError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 	response.WriteJSON(w, http.StatusOK, NewSubInfoResponse(*sub))
-
 }
 
 // Update
@@ -89,11 +90,12 @@ func (h *SubsHandler) Update(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		h.log.Error("failed to update subscription", "error", err, "id", sub.ID)
 		response.WriteError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
-
-	response.WriteJSON(w, http.StatusOK, "subscription updated")
+	h.log.Info("sub was updated", "id", id.String())
+	response.WriteJSON(w, http.StatusOK, NewSubInfoResponse(sub))
 }
 
 // Delete
@@ -109,10 +111,11 @@ func (h *SubsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err1 != nil {
+		h.log.Error("failed to delete subscription", "error", err1, "id", id)
 		response.WriteError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
-	response.WriteJSON(w, http.StatusOK, fmt.Sprintf("sub with id: %s was deleted", id.String()))
+	response.WriteJSON(w, http.StatusOK, map[string]string{"id": id.String(), "status": "deleted"})
 }
 
 // List
@@ -125,6 +128,7 @@ func (h *SubsHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	subs, err := h.SubsService.List(r.Context(), filter)
 	if err != nil {
+		h.log.Error("failed to get list", "error", err)
 		response.WriteError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -146,6 +150,7 @@ func (h *SubsHandler) SumUsingFilter(w http.ResponseWriter, r *http.Request) {
 
 	sum, err := h.SubsService.SumPrice(r.Context(), filter)
 	if err != nil {
+		h.log.Error("failed to get sum using filter", "error", err)
 		response.WriteError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}

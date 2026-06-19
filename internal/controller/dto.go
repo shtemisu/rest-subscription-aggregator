@@ -3,10 +3,16 @@ package controller
 import (
 	"fmt"
 	"net/url"
+	"strconv"
 	"subAggregator/internal/domain"
 	"time"
 
 	"github.com/google/uuid"
+)
+
+const (
+	defaultLimit = 50
+	maxLimit     = 100
 )
 
 type SubInfoRequest struct {
@@ -26,7 +32,7 @@ type SubInfoResponse struct {
 	EndDate     *string `json:"end_date,omitempty"`
 }
 
-func NewSubInfoResponse(s domain.SubcriptionInfo) SubInfoResponse {
+func NewSubInfoResponse(s domain.SubscriptionInfo) SubInfoResponse {
 	resp := SubInfoResponse{
 		ID:          s.ID.String(),
 		ServiceName: s.ServiceName,
@@ -43,23 +49,23 @@ func NewSubInfoResponse(s domain.SubcriptionInfo) SubInfoResponse {
 
 const monthYearLayout = "01-2006"
 
-func (r *SubInfoRequest) ToDomain() (domain.SubcriptionInfo, error) {
+func (r *SubInfoRequest) ToDomain() (domain.SubscriptionInfo, error) {
 	userID, err := uuid.Parse(r.UserID)
 	if err != nil {
-		return domain.SubcriptionInfo{}, fmt.Errorf("invalid user_id: %w", err)
+		return domain.SubscriptionInfo{}, fmt.Errorf("invalid user_id: %w", err)
 	}
 
 	start, err := time.Parse(monthYearLayout, r.StartDate)
 	if err != nil {
-		return domain.SubcriptionInfo{}, fmt.Errorf("invalid start_date, expected MM-YYYY: %w", err)
+		return domain.SubscriptionInfo{}, fmt.Errorf("invalid start_date, expected MM-YYYY: %w", err)
 	}
 	if r.ServiceName == "" {
-		return domain.SubcriptionInfo{}, fmt.Errorf("invalid service_name, it must not be empty")
+		return domain.SubscriptionInfo{}, fmt.Errorf("invalid service_name, it must not be empty")
 	}
 	if r.Price < 0 {
-		return domain.SubcriptionInfo{}, fmt.Errorf("invalid price, it must not be lower than 0")
+		return domain.SubscriptionInfo{}, fmt.Errorf("invalid price, it must not be lower than 0")
 	}
-	sub := domain.SubcriptionInfo{
+	sub := domain.SubscriptionInfo{
 		ServiceName: r.ServiceName,
 		Price:       r.Price,
 		UserID:      userID,
@@ -69,7 +75,7 @@ func (r *SubInfoRequest) ToDomain() (domain.SubcriptionInfo, error) {
 	if r.EndDate != nil && *r.EndDate != "" {
 		end, err := time.Parse(monthYearLayout, *r.EndDate)
 		if err != nil {
-			return domain.SubcriptionInfo{}, fmt.Errorf("invalid end_date, expected MM-YYYY: %w", err)
+			return domain.SubscriptionInfo{}, fmt.Errorf("invalid end_date, expected MM-YYYY: %w", err)
 		}
 		sub.EndDate = &end
 	}
@@ -106,6 +112,26 @@ func parseFilter(q url.Values) (domain.SubsFilter, error) {
 			return f, fmt.Errorf("invalid 'to', expected MM-YYYY")
 		}
 		f.PeriodEnd = &t
+	}
+
+	// Пагинация: значения по умолчанию, с ограничением максимума.
+	f.Limit = defaultLimit
+	if v := q.Get("limit"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 1 {
+			return f, fmt.Errorf("invalid 'limit', expected positive integer")
+		}
+		if n > maxLimit {
+			n = maxLimit
+		}
+		f.Limit = n
+	}
+	if v := q.Get("offset"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err != nil || n < 0 {
+			return f, fmt.Errorf("invalid 'offset', expected non-negative integer")
+		}
+		f.Offset = n
 	}
 
 	return f, nil
