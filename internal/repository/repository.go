@@ -140,8 +140,6 @@ func (r *SubsRepo) SumPrice(ctx context.Context, filter domain.SubsFilter) (int,
 	return total, nil
 }
 
-// buildFilter дописывает WHERE-условия к базовому запросу и собирает аргументы
-// в порядке плейсхолдеров $1, $2, ...
 func buildFilter(base string, f domain.SubsFilter) (string, []any) {
 	conds := make([]string, 0, 4)
 	args := make([]any, 0, 4)
