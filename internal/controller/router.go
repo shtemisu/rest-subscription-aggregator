@@ -1,9 +1,17 @@
 package controller
 
-import "net/http"
+import (
+	"net/http"
+
+	httpSwagger "github.com/swaggo/http-swagger/v2"
+
+	_ "subAggregator/docs"
+)
 
 func NewRouter(h *SubsHandler) *http.ServeMux {
 	mux := http.NewServeMux()
+
+	mux.Handle("GET /swagger/", httpSwagger.WrapHandler)
 
 	mux.HandleFunc("POST /subscriptions", h.Create)
 	mux.HandleFunc("GET /subscriptions", h.List)
