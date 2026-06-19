@@ -14,7 +14,7 @@ type SubcriptionInfo struct {
 	Price       int
 	UserID      uuid.UUID
 	StartDate   time.Time
-	EndDate     *time.Time // опционально
+	EndDate     *time.Time
 }
 
 // SubsFilter — фильтр для списка и подсчёта суммы.
