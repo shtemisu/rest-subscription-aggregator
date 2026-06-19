@@ -1,0 +1,43 @@
+services:
+  postgres-sub-aggregator:
+    image: postgres:17-alpine
+    container_name: postgres-sub-aggregator
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=1234
+      - POSTGRES_DB=subscriptions
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - aggregator-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d subscriptions"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 10s
+
+  subs-aggregator:
+    build:
+      context: .
+      dockerfile: build/app/Dockerfile
+    image: sub-aggregator:1.0
+    container_name: sub-aggregator_cont
+    env_file:
+      - ./.env
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres-sub-aggregator:
+        condition: service_healthy
+    networks:
+      - aggregator-network
+
+networks:
+  aggregator-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
