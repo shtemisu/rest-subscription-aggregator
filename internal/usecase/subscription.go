@@ -17,7 +17,7 @@ func NewSubAggregatorService(repo domain.SubsInfoRepository) *SubAggregatorServi
 	}
 }
 
-func (s *SubAggregatorService) List(ctx context.Context, filter domain.SubsFilter) ([]domain.SubcriptionInfo, error) {
+func (s *SubAggregatorService) List(ctx context.Context, filter domain.SubsFilter) ([]domain.SubscriptionInfo, error) {
 	subsInfo, err := s.repo.List(ctx, filter)
 	if err != nil {
 		return nil, err
@@ -32,21 +32,21 @@ func (s *SubAggregatorService) SumPrice(ctx context.Context, filter domain.SubsF
 	return sum, err
 }
 
-func (s *SubAggregatorService) Create(ctx context.Context, sub domain.SubcriptionInfo) (uuid.UUID, error) {
+func (s *SubAggregatorService) Create(ctx context.Context, sub domain.SubscriptionInfo) (uuid.UUID, error) {
 	id, err := s.repo.Create(ctx, sub)
 	if err != nil {
 		return uuid.Nil, err
 	}
 	return id, nil
 }
-func (s *SubAggregatorService) GetByID(ctx context.Context, id uuid.UUID) (*domain.SubcriptionInfo, error) {
+func (s *SubAggregatorService) GetByID(ctx context.Context, id uuid.UUID) (*domain.SubscriptionInfo, error) {
 	info, err := s.repo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
 	}
 	return info, nil
 }
-func (s *SubAggregatorService) Update(ctx context.Context, sub domain.SubcriptionInfo) error {
+func (s *SubAggregatorService) Update(ctx context.Context, sub domain.SubscriptionInfo) error {
 	return s.repo.Update(ctx, sub)
 }
 func (s *SubAggregatorService) Delete(ctx context.Context, id uuid.UUID) error {

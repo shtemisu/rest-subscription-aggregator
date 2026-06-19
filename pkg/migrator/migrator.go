@@ -2,18 +2,15 @@ package migrator
 
 import (
 	"fmt"
-	"log"
 	"subAggregator/config"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/source/file"
-
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file"
 )
 
 func RunMigrations(cfg *config.Config) error {
 	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable", cfg.DatabaseUser, cfg.DatabasePassword, cfg.DatabaseHost, cfg.DatabasePort, cfg.DatabaseName)
-	log.Println("running migrations...")
 	m, err := migrate.New(
 		"file://migrations",
 		dsn,

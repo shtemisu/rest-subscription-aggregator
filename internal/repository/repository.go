@@ -23,7 +23,7 @@ func NewSubsRepo(pool *pgxpool.Pool) *SubsRepo {
 	}
 }
 
-func (r *SubsRepo) Create(ctx context.Context, sub domain.SubcriptionInfo) (uuid.UUID, error) {
+func (r *SubsRepo) Create(ctx context.Context, sub domain.SubscriptionInfo) (uuid.UUID, error) {
 	const query = `
 		INSERT INTO subscriptions (service_name, price, user_id, start_date, end_date)
 		VALUES ($1, $2, $3, $4, $5)
@@ -40,13 +40,13 @@ func (r *SubsRepo) Create(ctx context.Context, sub domain.SubcriptionInfo) (uuid
 	return id, nil
 }
 
-func (r *SubsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.SubcriptionInfo, error) {
+func (r *SubsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.SubscriptionInfo, error) {
 	const query = `
 		SELECT id, service_name, price, user_id, start_date, end_date
 		FROM subscriptions
 		WHERE id = $1`
 
-	var sub domain.SubcriptionInfo
+	var sub domain.SubscriptionInfo
 	err := r.pool.QueryRow(ctx, query, id).Scan(
 		&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate,
 	)
@@ -60,7 +60,7 @@ func (r *SubsRepo) GetByID(ctx context.Context, id uuid.UUID) (*domain.Subcripti
 	return &sub, nil
 }
 
-func (r *SubsRepo) Update(ctx context.Context, sub domain.SubcriptionInfo) error {
+func (r *SubsRepo) Update(ctx context.Context, sub domain.SubscriptionInfo) error {
 	const query = `
 		UPDATE subscriptions
 		SET service_name = $2,
@@ -98,11 +98,16 @@ func (r *SubsRepo) Delete(ctx context.Context, id uuid.UUID) error {
 	return nil
 }
 
-func (r *SubsRepo) List(ctx context.Context, filter domain.SubsFilter) ([]domain.SubcriptionInfo, error) {
+func (r *SubsRepo) List(ctx context.Context, filter domain.SubsFilter) ([]domain.SubscriptionInfo, error) {
 	query, args := buildFilter(`
 		SELECT id, service_name, price, user_id, start_date, end_date
 		FROM subscriptions`, filter)
 	query += " ORDER BY start_date DESC, id"
+
+	args = append(args, filter.Limit)
+	query += fmt.Sprintf(" LIMIT $%d", len(args))
+	args = append(args, filter.Offset)
+	query += fmt.Sprintf(" OFFSET $%d", len(args))
 
 	rows, err := r.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -110,9 +115,9 @@ func (r *SubsRepo) List(ctx context.Context, filter domain.SubsFilter) ([]domain
 	}
 	defer rows.Close()
 
-	subs := make([]domain.SubcriptionInfo, 0)
+	subs := make([]domain.SubscriptionInfo, 0)
 	for rows.Next() {
-		var sub domain.SubcriptionInfo
+		var sub domain.SubscriptionInfo
 		if err := rows.Scan(
 			&sub.ID, &sub.ServiceName, &sub.Price, &sub.UserID, &sub.StartDate, &sub.EndDate,
 		); err != nil {

@@ -7,8 +7,8 @@ import (
 	"github.com/google/uuid"
 )
 
-// SubcriptionInfo — запись о подписке пользователя.
-type SubcriptionInfo struct {
+// SubscriptionInfo — запись о подписке пользователя.
+type SubscriptionInfo struct {
 	ID          uuid.UUID
 	ServiceName string
 	Price       int
@@ -18,30 +18,33 @@ type SubcriptionInfo struct {
 }
 
 // SubsFilter — фильтр для списка и подсчёта суммы.
-// Все поля опциональны: nil означает «не фильтровать».
+// Поля-указатели опциональны: nil означает «не фильтровать».
+// Limit/Offset используются только в List для пагинации.
 type SubsFilter struct {
 	UserID      *uuid.UUID
 	ServiceName *string
 	PeriodStart *time.Time
 	PeriodEnd   *time.Time
+	Limit       int
+	Offset      int
 }
 
 // SubsInfoRepository — доступ к хранилищу подписок.
 type SubsInfoRepository interface {
-	Create(ctx context.Context, sub SubcriptionInfo) (uuid.UUID, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*SubcriptionInfo, error)
-	Update(ctx context.Context, sub SubcriptionInfo) error
+	Create(ctx context.Context, sub SubscriptionInfo) (uuid.UUID, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*SubscriptionInfo, error)
+	Update(ctx context.Context, sub SubscriptionInfo) error
 	Delete(ctx context.Context, id uuid.UUID) error
-	List(ctx context.Context, filter SubsFilter) ([]SubcriptionInfo, error)
+	List(ctx context.Context, filter SubsFilter) ([]SubscriptionInfo, error)
 	SumPrice(ctx context.Context, filter SubsFilter) (int, error)
 }
 
-// SubcriptionAggregatorService — бизнес-логика сервиса.
-type SubcriptionAggregatorService interface {
-	Create(ctx context.Context, sub SubcriptionInfo) (uuid.UUID, error)
-	GetByID(ctx context.Context, id uuid.UUID) (*SubcriptionInfo, error)
-	Update(ctx context.Context, sub SubcriptionInfo) error
+// SubscriptionAggregatorService — бизнес-логика сервиса.
+type SubscriptionAggregatorService interface {
+	Create(ctx context.Context, sub SubscriptionInfo) (uuid.UUID, error)
+	GetByID(ctx context.Context, id uuid.UUID) (*SubscriptionInfo, error)
+	Update(ctx context.Context, sub SubscriptionInfo) error
 	Delete(ctx context.Context, id uuid.UUID) error
-	List(ctx context.Context, filter SubsFilter) ([]SubcriptionInfo, error)
+	List(ctx context.Context, filter SubsFilter) ([]SubscriptionInfo, error)
 	SumPrice(ctx context.Context, filter SubsFilter) (int, error)
 }
