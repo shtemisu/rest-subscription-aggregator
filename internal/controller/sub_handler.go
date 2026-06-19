@@ -117,27 +117,37 @@ func (h *SubsHandler) Delete(w http.ResponseWriter, r *http.Request) {
 
 // List
 func (h *SubsHandler) List(w http.ResponseWriter, r *http.Request) {
-	q := r.URL.Query()
-	var filter domain.SubsFilter
-	if v := q.Get("user_id"); v != "" {
-		userID, err := uuid.Parse(v)
-		if err != nil {
-			response.WriteError(w, http.StatusBadRequest, "invalid user_id, expected UUID")
-			return
-		}
-		filter.UserID = &userID
+	filter, err := parseFilter(r.URL.Query())
+	if err != nil {
+		response.WriteError(w, http.StatusBadRequest, err.Error())
+		return
 	}
-	if v := q.Get("service_name"); v != "" {
-		filter.ServiceName = &v
-	}
+
 	subs, err := h.SubsService.List(r.Context(), filter)
 	if err != nil {
 		response.WriteError(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
+
 	resp := make([]SubInfoResponse, 0, len(subs))
 	for _, s := range subs {
 		resp = append(resp, NewSubInfoResponse(s))
 	}
 	response.WriteJSON(w, http.StatusOK, resp)
+}
+
+// Sum
+func (h *SubsHandler) SumUsingFilter(w http.ResponseWriter, r *http.Request) {
+	filter, err := parseFilter(r.URL.Query())
+	if err != nil {
+		response.WriteError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	sum, err := h.SubsService.SumPrice(r.Context(), filter)
+	if err != nil {
+		response.WriteError(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+	response.WriteJSON(w, http.StatusOK, map[string]int{"total": sum})
 }
