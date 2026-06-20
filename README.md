@@ -30,7 +30,7 @@ domain      → модели и интерфейсы (порты)              (
 ### Через Docker Compose (рекомендуется)
 
 ```bash
-cp .env.example .env          # при необходимости поправь значения
+cp .env.example .env
 docker compose up -d --build
 ```
 
@@ -42,8 +42,8 @@ docker compose up -d --build
 Остановить:
 
 ```bash
-docker compose down       # остановить
-docker compose down -v    # + удалить данные БД (volume)
+docker compose down       
+docker compose down -v
 ```
 ## Конфигурация
 
